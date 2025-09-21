@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Water-Borne Disease Dashboard - India</title>
+    <!-- Chosen Palette: Calm Harmony (Warm neutrals with subtle blue and teal accents) -->
+    <!-- Application Structure Plan: A dashboard-style, single-page application is chosen for its intuitive and interactive nature. The structure is thematic, not linear, allowing users to freely explore. The core user flow is: 1) Select a disease from a prominent list. 2) Instantly see updated, relevant visualizations (pH/TDS risk indicators, risk factor chart) and a detailed text description. 3) Refer to a static prevention guide. This user-driven approach is more engaging than a static report, making the complex relationship between water quality and health easier to understand by focusing on one disease at a time while providing immediate visual feedback. -->
+    <!-- Visualization & Content Choices: 
+        - Disease Selection: Report Info -> List of diseases. Goal -> Navigate. Method -> Interactive HTML buttons. Interaction -> On-click updates the entire dashboard state. Justification -> Clear, simple navigation is the primary interaction. Library -> Vanilla JS.
+        - Water Quality Parameters (pH/TDS): Report Info -> Unsafe ranges. Goal -> Inform. Method -> Styled HTML cards with dynamic text and color. Interaction -> Content updates on disease selection. Justification -> Provides an immediate, easy-to-read summary of the key risk factors. Library -> Vanilla JS.
+        - Risk Factor Comparison: Report Info -> Correlation between parameters and disease. Goal -> Compare. Method -> Bar Chart. Interaction -> Redraws with new data on disease selection. Justification -> A bar chart clearly compares the relative impact of pH vs. TDS for the chosen disease, which is a core goal of the app. Library -> Chart.js (Canvas).
+        - Disease Details: Report Info -> Disease descriptions/symptoms. Goal -> Inform. Method -> Dynamic text block. Interaction -> Updates on disease selection. Justification -> Provides necessary context without cluttering the main view. Library -> Vanilla JS.
+        - Prevention: Report Info -> General safety measures. Goal -> Advise. Method -> Static, icon-based list. Interaction -> None. Justification -> Actionable, universal information that doesn't need to be dynamic. Library -> HTML/Tailwind.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -36,13 +46,27 @@
             background: #cbd5e1;
             outline: none;
             opacity: 0.7;
+            -webkit-transition: .2s;
             transition: opacity .2s;
             border-radius: 4px;
         }
+
         input[type="range"]:hover {
             opacity: 1;
         }
-        input[type="range"]::-webkit-slider-thumb,
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            background: var(--thumb-color, #10b981);
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            transition: background 0.3s ease;
+        }
+        
         input[type="range"]::-moz-range-thumb {
             width: 25px;
             height: 25px;
@@ -50,119 +74,314 @@
             cursor: pointer;
             border-radius: 50%;
             border: 2px solid #fff;
-            transition: background 0.3s ease, transform 0.2s ease;
+            transition: background 0.3s ease;
         }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-<div class="container mx-auto p-4 md:p-8">
+    <div class="container mx-auto p-4 md:p-8">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-5xl font-bold text-teal-800">Water Quality & Health in India</h1>
+            <p class="text-lg text-gray-600 mt-2">An interactive dashboard exploring the link between water parameters and common diseases.</p>
+        </header>
 
-    <header class="text-center mb-8">
-        <h1 class="text-3xl md:text-5xl font-bold text-teal-800">Water Quality & Health in India</h1>
-        <p class="text-lg text-gray-600 mt-2">An interactive dashboard exploring the link between water parameters and common diseases.</p>
-    </header>
-
-    <main>
-        <!-- Disease Selector -->
-        <section id="disease-selector" class="mb-8">
-            <h2 class="text-2xl font-bold text-center mb-4 text-gray-700">Select a Disease to Explore</h2>
-            <div id="disease-buttons" class="flex flex-wrap justify-center gap-2 md:gap-4">
-                <!-- Buttons injected by JS -->
-            </div>
-        </section>
-
-        <!-- Dashboard -->
-        <section id="dashboard" class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-8">
-            <!-- Left Panel: Details -->
-            <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-md flex flex-col">
-                <div class="flex items-center mb-3">
-                    <h3 id="disease-title" class="text-2xl font-bold text-teal-700"></h3>
+        <main>
+            <!-- Disease Selector -->
+            <section id="disease-selector" class="mb-8">
+                <h2 class="text-2xl font-bold text-center mb-4 text-gray-700">Select a Disease to Explore</h2>
+                <div id="disease-buttons" class="flex flex-wrap justify-center gap-2 md:gap-4">
+                    <!-- Buttons will be injected here by JS -->
                 </div>
-                <p id="disease-description" class="text-gray-600 flex-grow"></p>
-            </div>
+            </section>
 
-            <!-- Center Panel: Chart -->
-            <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-2xl font-bold mb-4 text-center text-gray-700">Key Risk Factor Analysis</h3>
-                <div class="chart-container">
-                    <canvas id="riskChart"></canvas>
+            <!-- Dashboard -->
+            <section id="dashboard" class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-8">
+                <!-- Left Panel: Details -->
+                <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-md flex flex-col">
+                    <div class="flex items-center mb-3">
+                        <h3 id="disease-title" class="text-2xl font-bold text-teal-700"></h3>
+                    </div>
+                    <p id="disease-description" class="text-gray-600 flex-grow"></p>
                 </div>
-            </div>
-        </section>
 
-        <!-- Water Quality Indicators -->
-        <section id="water-quality-indicators" class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-8">
-            <div class="bg-white p-6 rounded-lg shadow-md text-center">
-                <h4 class="text-xl font-bold text-gray-700 mb-2">pH Level Risk</h4>
-                <p class="text-gray-600 mb-4">Ideal drinking water pH is 6.5-8.5.</p>
-                <div id="ph-indicator" class="p-4 rounded-lg">
-                    <p class="font-bold text-lg text-white">Unsafe Range for Disease:</p>
-                    <p id="ph-range" class="font-mono text-2xl text-white"></p>
+                <!-- Center Panel: Chart -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-2xl font-bold mb-4 text-center text-gray-700">Key Risk Factor Analysis</h3>
+                    <div class="chart-container">
+                        <canvas id="riskChart"></canvas>
+                    </div>
                 </div>
-            </div>
-            <div class="bg-white p-6 rounded-lg shadow-md text-center">
-                <h4 class="text-xl font-bold text-gray-700 mb-2">TDS Level Risk</h4>
-                <p class="text-gray-600 mb-4">Total Dissolved Solids (TDS) ideal level is < 500 ppm.</p>
-                <div id="tds-indicator" class="p-4 rounded-lg">
-                    <p class="font-bold text-lg text-white">Unsafe Range for Disease:</p>
-                    <p id="tds-range" class="font-mono text-2xl text-white"></p>
+            </section>
+            
+            <!-- Water Quality Indicators -->
+            <section id="water-quality-indicators" class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <h4 class="text-xl font-bold text-gray-700 mb-2">pH Level Risk</h4>
+                    <p class="text-gray-600 mb-4">Ideal drinking water pH is 6.5-8.5.</p>
+                    <div id="ph-indicator" class="p-4 rounded-lg">
+                        <p class="font-bold text-lg text-white">Unsafe Range for Disease:</p>
+                        <p id="ph-range" class="font-mono text-2xl text-white"></p>
+                    </div>
                 </div>
-            </div>
-        </section>
-
-        <!-- TDS Level Prober -->
-        <section id="tds-prober" class="bg-white p-6 md:p-8 rounded-lg shadow-md mb-8">
-            <h2 class="text-2xl font-bold text-center mb-4 text-teal-800">Find Probable Disease by TDS Level</h2>
-            <p class="text-center text-gray-600 mb-6">Drag the slider to a TDS value to see the most probable disease.</p>
-            <div class="flex items-center gap-4 mb-4">
-                <span class="text-lg font-semibold text-gray-700 w-16 text-right">TDS:</span>
-                <span id="tds-value-display" class="text-lg font-bold text-teal-600 w-16 text-center">0</span>
-                <span class="text-lg text-gray-600">ppm</span>
-                <input type="range" id="tds-slider" min="0" max="1500" value="0" class="flex-grow" aria-label="Select TDS level">
-            </div>
-            <div id="probable-disease-display" class="text-center bg-gray-100 rounded-lg border border-gray-200 p-4">
-                <p class="text-xl font-semibold text-gray-700">Probable Disease: <span id="probable-disease-name" class="font-bold text-teal-700">None found</span></p>
-            </div>
-        </section>
-
-        <!-- Prevention Section -->
-        <section id="prevention" class="bg-white p-6 md:p-8 rounded-lg shadow-md">
-            <h2 class="text-2xl md:text-3xl font-bold text-center mb-6 text-teal-800">Protect Yourself: Prevention is Key</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
-                <div class="flex flex-col items-center">
-                    <span class="text-5xl mb-2">💧</span>
-                    <h4 class="font-bold text-lg">Boil Water</h4>
-                    <p class="text-gray-600">Bring water to a rolling boil for at least 1-3 minutes to kill most pathogens.</p>
+                <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                    <h4 class="text-xl font-bold text-gray-700 mb-2">TDS Level Risk</h4>
+                    <p class="text-gray-600 mb-4">Total Dissolved Solids (TDS) ideal level is < 500 ppm.</p>
+                    <div id="tds-indicator" class="p-4 rounded-lg">
+                        <p class="font-bold text-lg text-white">Unsafe Range for Disease:</p>
+                        <p id="tds-range" class="font-mono text-2xl text-white"></p>
+                    </div>
                 </div>
-                <div class="flex flex-col items-center">
-                     <span class="text-5xl mb-2">🛡️</span>
-                    <h4 class="font-bold text-lg">Use Filters</h4>
-                    <p class="text-gray-600">Use a reliable water filter (RO, UV) certified to remove bacteria and viruses.</p>
+            </section>
+
+            <!-- TDS Level Prober -->
+            <section id="tds-prober" class="bg-white p-6 md:p-8 rounded-lg shadow-md mb-8">
+                <h2 class="text-2xl font-bold text-center mb-4 text-teal-800">Find Probable Disease by TDS Level</h2>
+                <p class="text-center text-gray-600 mb-6">Drag the slider to a TDS value to see the most probable disease.</p>
+                <div class="flex items-center gap-4 mb-4">
+                    <span class="text-lg font-semibold text-gray-700 w-16 text-right">TDS:</span>
+                    <span id="tds-value-display" class="text-lg font-bold text-teal-600 w-16 text-center">0</span>
+                    <span class="text-lg text-gray-600">ppm</span>
+                    <input type="range" id="tds-slider" min="0" max="1500" value="0" class="flex-grow">
                 </div>
-                <div class="flex flex-col items-center">
-                    <span class="text-5xl mb-2">🧼</span>
-                    <h4 class="font-bold text-lg">Wash Hands</h4>
-                    <p class="text-gray-600">Practice good hygiene, especially before eating and after using the toilet.</p>
+                <div id="probable-disease-display" class="text-center bg-gray-100 rounded-lg border border-gray-200 p-4">
+                    <p class="text-xl font-semibold text-gray-700">Probable Disease: <span id="probable-disease-name" class="font-bold text-teal-700">None found</span></p>
                 </div>
-                <div class="flex flex-col items-center">
-                    <span class="text-5xl mb-2">🍎</span>
-                    <h4 class="font-bold text-lg">Clean Food</h4>
-                    <p class="text-gray-600">Wash fruits and vegetables thoroughly with safe, clean water before consumption.</p>
+            </section>
+
+            <!-- Prevention Section -->
+            <section id="prevention" class="bg-white p-6 md:p-8 rounded-lg shadow-md">
+                <h2 class="text-2xl md:text-3xl font-bold text-center mb-6 text-teal-800">Protect Yourself: Prevention is Key</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+                    <div class="flex flex-col items-center">
+                        <span class="text-5xl mb-2">💧</span>
+                        <h4 class="font-bold text-lg">Boil Water</h4>
+                        <p class="text-gray-600">Bring water to a rolling boil for at least 1-3 minutes to kill most pathogens.</p>
+                    </div>
+                    <div class="flex flex-col items-center">
+                         <span class="text-5xl mb-2">🛡️</span>
+                        <h4 class="font-bold text-lg">Use Filters</h4>
+                        <p class="text-gray-600">Use a reliable water filter (RO, UV) certified to remove bacteria and viruses.</p>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-5xl mb-2">🧼</span>
+                        <h4 class="font-bold text-lg">Wash Hands</h4>
+                        <p class="text-gray-600">Practice good hygiene, especially before eating and after using the toilet.</p>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <span class="text-5xl mb-2">🍎</span>
+                        <h4 class="font-bold text-lg">Clean Food</h4>
+                        <p class="text-gray-600">Wash fruits and vegetables thoroughly with safe, clean water before consumption.</p>
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-    </main>
+        </main>
 
-    <footer class="text-center mt-8 py-4 border-t">
-        <p class="text-gray-500">Data for illustrative purposes. Always consult public health authorities for official information.</p>
-    </footer>
+        <footer class="text-center mt-8 py-4 border-t">
+            <p class="text-gray-500">Data for illustrative purposes. Always consult public health authorities for official information.</p>
+        </footer>
 
-</div>
+    </div>
 
-<script>
-const diseaseData = {
-    'Cholera': { description: "An acute diarrheal illness caused by Vibrio cholerae bacteria. High pH favors survival.", unsafe_ph: { min: 8.5, max: 9.5 }, unsafe_tds: { min: 1000 }, risk_factors: { ph: 7, tds: 9 } },
-    'Typhoid': { description: "Bacterial infection caused by Salmonella Typhi. Persists in high organic content water.", unsafe_ph: { min: 4.5, max: 5.5, or_min: 8.0 }, unsafe_tds: { min: 800 }, risk_factors: { ph: 5, tds: 8 } },
-    'Dysentery': { description: "Intestinal inflammation leading to severe diarrhea.", unsafe_ph: { min: 5.0, max
+    <script>
+        const diseaseData = {
+            'Cholera': {
+                description: "An acute diarrheal illness caused by infection of the intestine with Vibrio cholerae bacteria. It spreads rapidly in areas with inadequate treatment of sewage and drinking water. High pH levels can favor the survival of the bacteria.",
+                unsafe_ph: { min: 8.5, max: 9.5 },
+                unsafe_tds: { min: 1000 },
+                risk_factors: { ph: 7, tds: 9 }
+            },
+            'Typhoid': {
+                description: "A bacterial infection caused by Salmonella Typhi. It is highly contagious and spreads through contaminated food and water. The bacteria can persist in water sources with high organic content, often reflected in TDS levels.",
+                unsafe_ph: { min: 4.5, max: 5.5, or_min: 8.0 },
+                unsafe_tds: { min: 800 },
+                risk_factors: { ph: 5, tds: 8 }
+            },
+            'Dysentery': {
+                description: "An intestinal inflammation, especially in the colon, that can lead to severe diarrhea with blood. It can be caused by bacteria (Shigella) or amoebas. Contamination is often linked to poor sanitation and high levels of dissolved solids.",
+                unsafe_ph: { min: 5.0, max: 6.0 },
+                unsafe_tds: { min: 1200 },
+                risk_factors: { ph: 4, tds: 7 }
+            },
+            'Giardiasis': {
+                description: "A diarrheal disease caused by the microscopic parasite Giardia lamblia. The parasite's cysts are hardy and can survive in water for long periods, especially in colder water. Risk is less dependent on pH but increases with contamination indicated by TDS.",
+                unsafe_ph: { min: 6.0, max: 8.0, note: "wide tolerance" },
+                unsafe_tds: { min: 900 },
+                risk_factors: { ph: 3, tds: 6 }
+            },
+            'Hepatitis A': {
+                description: "A liver infection caused by the Hepatitis A virus (HAV). It is highly contagious and spreads through ingestion of contaminated food and water. The virus is resistant to low pH and can survive in diverse water conditions.",
+                unsafe_ph: { min: 3.0, max: 4.0, note: "acid resistant" },
+                unsafe_tds: { min: 700 },
+                risk_factors: { ph: 6, tds: 5 }
+            }
+        };
+
+        function updateProbableDisease() {
+            const tdsSlider = document.getElementById('tds-slider');
+            const tdsValueDisplay = document.getElementById('tds-value-display');
+            const probableDiseaseName = document.getElementById('probable-disease-name');
+            const currentTDS = parseInt(tdsSlider.value);
+            
+            tdsValueDisplay.textContent = currentTDS;
+            
+            const diseases = Object.keys(diseaseData).map(key => ({
+                name: key,
+                minTDS: diseaseData[key].unsafe_tds.min
+            }));
+
+            // Sort diseases by TDS level in descending order to check for highest risk first
+            diseases.sort((a, b) => b.minTDS - a.minTDS);
+
+            let foundDisease = 'None found';
+            for (const disease of diseases) {
+                if (currentTDS >= disease.minTDS) {
+                    foundDisease = disease.name;
+                    break;
+                }
+            }
+            
+            probableDiseaseName.textContent = foundDisease;
+            
+            // Change color of the TDS bar, value, and disease name based on risk
+            const isUnsafe = foundDisease !== 'None found';
+            const sliderThumbColor = isUnsafe ? '#ef4444' : '#10b981';
+            const textColorClass = isUnsafe ? 'text-red-500' : 'text-teal-600';
+            const probableDiseaseClass = isUnsafe ? 'text-red-500' : 'text-teal-700';
+
+            tdsSlider.style.setProperty('--thumb-color', sliderThumbColor);
+            
+            tdsValueDisplay.classList.remove('text-teal-600', 'text-red-500');
+            tdsValueDisplay.classList.add(textColorClass);
+
+            probableDiseaseName.classList.remove('text-teal-700', 'text-red-500');
+            probableDiseaseName.classList.add(probableDiseaseClass);
+        }
+        
+        document.getElementById('tds-slider').addEventListener('input', updateProbableDisease);
+
+        function createDiseaseButtons(onDiseaseSelect) {
+            const container = document.getElementById('disease-buttons');
+            Object.keys(diseaseData).forEach(diseaseName => {
+                const button = document.createElement('button');
+                button.textContent = diseaseName;
+                button.className = 'disease-btn px-4 py-2 text-base md:text-lg font-semibold text-teal-700 bg-white border-2 border-teal-200 rounded-full hover:bg-teal-100 transition duration-300';
+                button.onclick = () => onDiseaseSelect(diseaseName);
+                container.appendChild(button);
+            });
+        }
+
+        function updateDashboard(diseaseName, chart) {
+            const data = diseaseData[diseaseName];
+
+            document.getElementById('disease-title').textContent = diseaseName;
+            document.getElementById('disease-description').textContent = data.description;
+
+            const phIndicator = document.getElementById('ph-indicator');
+            const phRangeEl = document.getElementById('ph-range');
+            if (data.unsafe_ph.or_min) {
+                phRangeEl.textContent = `< ${data.unsafe_ph.max} or > ${data.unsafe_ph.or_min}`;
+            } else if (data.unsafe_ph.note) {
+                 phRangeEl.textContent = `${data.unsafe_ph.min} - ${data.unsafe_ph.max}`;
+            }
+            else {
+                phRangeEl.textContent = `${data.unsafe_ph.min} - ${data.unsafe_ph.max}`;
+            }
+            phIndicator.className = 'p-4 rounded-lg bg-red-500';
+
+            const tdsIndicator = document.getElementById('tds-indicator');
+            document.getElementById('tds-range').textContent = `> ${data.unsafe_tds.min} ppm`;
+            tdsIndicator.className = 'p-4 rounded-lg bg-orange-500';
+            
+            updateChart(data.risk_factors, chart);
+
+            document.querySelectorAll('.disease-btn').forEach(btn => {
+                if (btn.textContent === diseaseName) {
+                    btn.classList.add('active-disease');
+                } else {
+                    btn.classList.remove('active-disease');
+                }
+            });
+        }
+
+        function updateChart(riskFactors, chart) {
+            chart.data.datasets[0].data = [riskFactors.ph, riskFactors.tds];
+            chart.update();
+        }
+
+        function initializeChart() {
+            const ctx = document.getElementById('riskChart').getContext('2d');
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Abnormal pH Level', 'High TDS Level'],
+                    datasets: [{
+                        label: 'Relative Risk Factor (out of 10)',
+                        data: [0, 0],
+                        backgroundColor: [
+                            'rgba(239, 68, 68, 0.6)', 
+                            'rgba(249, 115, 22, 0.6)' 
+                        ],
+                        borderColor: [
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(249, 115, 22, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 10,
+                            grid: {
+                                color: '#e5e7eb'
+                            }
+                        },
+                        y: {
+                           grid: {
+                                display: false
+                           }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#1f2937',
+                            titleFont: {
+                                size: 16
+                            },
+                            bodyFont: {
+                                size: 14
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    return `Risk Score: ${context.raw}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        window.onload = function() {
+            const chartInstance = initializeChart();
+            createDiseaseButtons((diseaseName) => updateDashboard(diseaseName, chartInstance));
+            const firstDisease = Object.keys(diseaseData)[0];
+            updateDashboard(firstDisease, chartInstance);
+            updateProbableDisease(); // Set initial state of the new feature
+        };
+    </script>
+</body>
+
+</html>
+
+ see the web can anything be fixed or changed 
